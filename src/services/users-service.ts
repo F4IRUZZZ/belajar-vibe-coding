@@ -68,5 +68,48 @@ export const usersService = {
     // 5. Kembalikan token
     return token;
   },
+
+  /**
+   * Mendapatkan data user yang sedang login berdasarkan session token.
+   * Melempar Error jika session atau user tidak ditemukan.
+   */
+  async getCurrentUser(token: string): Promise<{
+    id: number;
+    name: string;
+    email: string;
+    createdAt: Date;
+  }> {
+    // 1. Cari session berdasarkan token
+    const sessionResult = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.token, token));
+
+    if (sessionResult.length === 0) {
+      throw new Error("Unauthorized");
+    }
+
+    const session = sessionResult[0];
+
+    // 2. Cari user berdasarkan userId dari session
+    const userResult = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.userId!));
+
+    if (userResult.length === 0) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = userResult[0];
+
+    // 3. Kembalikan data user (tanpa password)
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+    };
+  },
 };
 

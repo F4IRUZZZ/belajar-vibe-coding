@@ -40,5 +40,33 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
         password: t.String({ minLength: 1 }),
       }),
     }
+  )
+  // GET /api/users/current - Ambil data user yang sedang login
+  .get(
+    "/current",
+    async ({ headers, set }) => {
+      try {
+        const authHeader = headers["authorization"];
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        const token = authHeader.substring(7);
+
+        if (!token) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        const user = await usersService.getCurrentUser(token);
+        return { data: user };
+      } catch (error: any) {
+        set.status = 401;
+        return { error: error.message || "Unauthorized" };
+      }
+    }
   );
+
 
