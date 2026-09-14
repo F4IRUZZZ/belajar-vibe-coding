@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { users, sessions } from "../db/schema";
 
 export const usersService = {
   /**
@@ -31,4 +31,42 @@ export const usersService = {
       password: hashedPassword,
     });
   },
+
+  /**
+   * Login user dan membuat session baru.
+   * Melempar Error jika email atau password salah.
+   */
+  async login(email: string, password: string): Promise<string> {
+    // 1. Cari user berdasarkan email
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+
+    if (result.length === 0) {
+      throw new Error("email atau password salah");
+    }
+
+    const user = result[0];
+
+    // 2. Verifikasi password dengan Bun built-in bcrypt
+    const isPasswordValid = await Bun.password.verify(password, user.password);
+
+    if (!isPasswordValid) {
+      throw new Error("email atau password salah");
+    }
+
+    // 3. Generate UUID token menggunakan Bun built-in
+    const token = Bun.randomUUIDv7();
+
+    // 4. Simpan session baru ke database
+    await db.insert(sessions).values({
+      token,
+      userId: user.id,
+    });
+
+    // 5. Kembalikan token
+    return token;
+  },
 };
+
