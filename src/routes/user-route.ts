@@ -1,6 +1,26 @@
 import { Elysia, t } from "elysia";
 import { usersService } from "../services/users-service";
 
+/**
+ * Helper untuk mengekstrak token Bearer dari header Authorization.
+ * Melempar Error "Unauthorized" jika header tidak ada, format salah, atau token kosong.
+ */
+function extractBearerToken(headers: Record<string, string | undefined>): string {
+  const authHeader = headers["authorization"];
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new Error("Unauthorized");
+  }
+
+  const token = authHeader.substring(7);
+
+  if (!token) {
+    throw new Error("Unauthorized");
+  }
+
+  return token;
+}
+
 export const userRoutes = new Elysia({ prefix: "/api/users" })
   // POST /api/users - Registrasi user baru
   .post(
@@ -46,22 +66,23 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
     "/current",
     async ({ headers, set }) => {
       try {
-        const authHeader = headers["authorization"];
-
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-          set.status = 401;
-          return { error: "Unauthorized" };
-        }
-
-        const token = authHeader.substring(7);
-
-        if (!token) {
-          set.status = 401;
-          return { error: "Unauthorized" };
-        }
-
+        const token = extractBearerToken(headers);
         const user = await usersService.getCurrentUser(token);
         return { data: user };
+      } catch (error: any) {
+        set.status = 401;
+        return { error: error.message || "Unauthorized" };
+      }
+    }
+  )
+  // DELETE /api/users/logout - Logout user dan hapus session
+  .delete(
+    "/logout",
+    async ({ headers, set }) => {
+      try {
+        const token = extractBearerToken(headers);
+        await usersService.logout(token);
+        return { data: "OK" };
       } catch (error: any) {
         set.status = 401;
         return { error: error.message || "Unauthorized" };
