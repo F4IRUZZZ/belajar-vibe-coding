@@ -111,5 +111,24 @@ export const usersService = {
       createdAt: user.createdAt,
     };
   },
+
+  /**
+   * Logout user dengan menghapus session berdasarkan token.
+   * Melempar Error "Unauthorized" jika session tidak ditemukan.
+   */
+  async logout(token: string): Promise<void> {
+    // 1. Cek apakah session dengan token ini ada di tabel sessions
+    const sessionResult = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.token, token));
+
+    if (sessionResult.length === 0) {
+      throw new Error("Unauthorized");
+    }
+
+    // 2. Hapus data session dari tabel sessions
+    await db.delete(sessions).where(eq(sessions.token, token));
+  },
 };
 

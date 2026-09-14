@@ -67,6 +67,33 @@ export const userRoutes = new Elysia({ prefix: "/api/users" })
         return { error: error.message || "Unauthorized" };
       }
     }
+  )
+  // DELETE /api/users/logout - Logout user dan hapus session
+  .delete(
+    "/logout",
+    async ({ headers, set }) => {
+      try {
+        const authHeader = headers["authorization"];
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        const token = authHeader.substring(7);
+
+        if (!token) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        await usersService.logout(token);
+        return { data: "OK" };
+      } catch (error: any) {
+        set.status = 401;
+        return { error: error.message || "Unauthorized" };
+      }
+    }
   );
 
 
