@@ -117,18 +117,14 @@ export const usersService = {
    * Melempar Error "Unauthorized" jika session tidak ditemukan.
    */
   async logout(token: string): Promise<void> {
-    // 1. Cek apakah session dengan token ini ada di tabel sessions
-    const sessionResult = await db
-      .select()
-      .from(sessions)
+    // Hapus session dari tabel sessions dan cek apakah ada baris yang terhapus
+    const [result] = await db
+      .delete(sessions)
       .where(eq(sessions.token, token));
 
-    if (sessionResult.length === 0) {
+    if (result.affectedRows === 0) {
       throw new Error("Unauthorized");
     }
-
-    // 2. Hapus data session dari tabel sessions
-    await db.delete(sessions).where(eq(sessions.token, token));
   },
 };
 
